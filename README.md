@@ -53,8 +53,8 @@ Planned Targets in no particular order (I can be persuaded with money to support
     git clone https://github.com/jwinarske/flutter_embedded
     cd flutter_embedded
     mkdir build && cd build
-    cmake .. -DCMAKE_BUILD_TYPE=Release -GNinja
-    autoninja
+    cmake ..
+    make -j`grep -c '^processor' /proc/cpuinfo`
 
 Note: Your build folder can be wherever you want...
 
@@ -172,19 +172,40 @@ The sdk folder will look like this after the toolchain has built properly
         |-- libexec
         `-- share
 
-### Default Font Requirement
+## Install Default Font
 
-    /usr/share/fonts/Arial.ttf
-
-If the above font is not present, you will see this error when attemping to launch Flutter
+If the Arial font is not present, with a Raspbian Lite image you will see this error when attemping to launch Flutter
 
     LOG: /home/joel/git/flutter_embedded/build/rpi_flutter-prefix/src/rpi_flutter/flutter/main.cc:66: Display Size: 800 x 480
     flutter: Observatory listening on http://127.0.0.1:34949/
     [ERROR:flutter/third_party/txt/src/minikin/FontFamily.cpp(184)] Could not get cmap table size!
 
+*One solution for Raspbian*
+
+    sudo apt-get install ttf-mscorefonts-installer
+    sudo fc-cache -fv 
+    sudo dpkg-reconfigure fontconfig-config 
+    sudo dpkg-reconfigure fontconfig
+
 ### Push Native Flutter build artifacts to Target
 
     scp -r {build folder}/target/* pi@raspberrypi.local:/home/pi
+
+### Build your Flutter Application
+
+    cd {flutter app project folder}
+    flutter build bundle
+
+*Note: You either need to override debugDefaultTargetPlatformOverride, or 
+"Enable Linux as a Platform in your Flutter Repo"*
+
+### Override debugDefaultTargetPlatformOverride
+
+    import 'package:flutter/foundation.dart'
+        show debugDefaultTargetPlatformOverride;
+    ...
+    void main() {
+      debugDefaultTargetPlatformOverride = TargetPlatform.fuchsia;
 
 ### Enable Linux as a Platform in your Flutter Repo
 
@@ -199,14 +220,6 @@ When adding in Linux support to the Dart code, start by adding "case TargetPlatf
 
     cd {flutter repo}
     grep -r "case TargetPlatform.android:"
-
-### Build your Flutter Application
-
-    cd {flutter app project folder}
-    flutter build bundle
-
-*Note: You either need to override debugDefaultTargetPlatformOverride, or 
-"Enable Linux as a Platform in your Flutter Repo"*
 
 ## Tested Flutter Examples
 
@@ -240,8 +253,14 @@ This can be run from a SSH session, or directly on the device.  You should see o
     LOG: /home/joel/git/flutter_embedded/build/rpi_flutter-prefix/src/rpi_flutter/flutter/main.cc:66: Display Size: 800 x 480
     flutter: Observatory listening on http://127.0.0.1:34949/
 
-*Note: If you get unknown platform exception, you either need to override debugDefaultTargetPlatformOverride, or 
-"Enable Linux as a Platform in your Flutter Repo"*
+*Notes*
+
+If you get unknown platform exception, you either need to override debugDefaultTargetPlatformOverride, or 
+"Enable Linux as a Platform in your Flutter Repo"
+
+This embedder requires the "Legacy - Original non-GL desktop driver" to be enabled.  It will not work with the "Full KMS", or "Fake KMS" driver.
+
+    sudo raspi-config -> "Advanced Options" -> "GL Driver" -> "Legacy"
 
 ### Raspberry Pi 7" Touch Display
 

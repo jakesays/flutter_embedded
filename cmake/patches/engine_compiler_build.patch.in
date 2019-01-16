@@ -22,7 +22,7 @@ index 67e7bdc80..7d0e87244 100644
 +        "-L@TOOLCHAIN_DIR@/lib",
 +        "-stdlib=libc++",
 +        "--rtlib=compiler-rt",
-+        "-fuse-ld=gold",
++        "-fuse-ld=lld",
 +      ]
 +
 +      libs += [

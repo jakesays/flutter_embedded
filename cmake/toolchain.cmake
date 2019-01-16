@@ -22,19 +22,30 @@
 # SOFTWARE.
 #
 
-include (ExternalProject)
+if(NOT ANDROID)
 
-#TODO place holder
+    if(NOT TARGET_ARCH)
+        set(TARGET_ARCH arm)
+    endif()
 
-set(FLUTTER_TARGET_NAME "Wayland")
-ExternalProject_Add(wayland_flutter
-    GIT_REPOSITORY https://github.com/chinmaygarde/flutter_wayland.git
-    GIT_TAG master
-    BUILD_IN_SOURCE 1
-    PATCH_COMMAND ""
-    UPDATE_COMMAND ""
-    CONFIGURE_COMMAND ""
-    BUILD_COMMAND autoninja -C out
-    INSTALL_COMMAND ""
-)
-add_dependencies(wayland_flutter engine)
+    if(NOT TARGET_SYSROOT)
+        set(TARGET_SYSROOT ${CMAKE_SOURCE_DIR}/sdk/sysroot)
+    endif()
+
+    if(NOT TARGET_TRIPLE)
+        set(TARGET_TRIPLE ${TARGET_ARCH}-linux-gnueabihf)
+    endif()
+
+    if(NOT TOOLCHAIN_DIR)
+        set(TOOLCHAIN_DIR ${CMAKE_SOURCE_DIR}/sdk/toolchain)
+        
+        include(llvm_options)
+        include(llvm_host)
+        include(llvm_target)
+    else()
+        if(LLVM_CONFIG_PATH)
+            include(llvm_config)
+        endif()
+    endif()
+
+endif()

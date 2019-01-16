@@ -22,36 +22,39 @@
 # SOFTWARE.
 #
 
-cmake_minimum_required(VERSION 3.11)
+include (ExternalProject)
 
-message(STATUS "llvm-config ............ ${LLVM_CONFIG_PATH}")
-
-set(CONFIG_COMMAND ${LLVM_CONFIG_PATH}
-    "--cflags"
-    "--cxxflags"
-    "--ldflags")
-
-execute_process(
-    COMMAND ${CONFIG_COMMAND}
-    RESULT_VARIABLE HAD_ERROR
-    OUTPUT_VARIABLE CONFIG_OUTPUT
-)
-
-if(NOT HAD_ERROR)
-    string(REGEX REPLACE "[ \t]*[\r\n]+[ \t]*" ";" CONFIG_OUTPUT ${CONFIG_OUTPUT})
-else()
-    string(REPLACE ";" " " CONFIG_COMMAND_STR "${CONFIG_COMMAND}")
-    message(STATUS "${CONFIG_COMMAND_STR}")
-    message(FATAL_ERROR "llvm-config failed with status ${HAD_ERROR}")
+if(NOT LLVM_TARGETS_TO_BUILD)
+    set(LLVM_TARGETS_TO_BUILD ARM|AArch64|X86)
 endif()
 
-list(GET CONFIG_OUTPUT 0 __CFLAGS)
-list(GET CONFIG_OUTPUT 1 __CXXFLAGS)
-list(GET CONFIG_OUTPUT 2 __LDFLAGS)
+ExternalProject_Add(llvm
+    DOWNLOAD_COMMAND ${LLVM_CHECKOUT}
+    SOURCE_DIR ${LLVM_SRC_DIR}
+    UPDATE_COMMAND ""
+    BUILD_IN_SOURCE 0
+    LIST_SEPARATOR |
+    CMAKE_ARGS
+        -DCMAKE_INSTALL_PREFIX=${TOOLCHAIN_DIR}
+        -DCMAKE_BUILD_TYPE=Release
+        -DCMAKE_VERBOSE_MAKEFILE=${CMAKE_VERBOSE_MAKEFILE}
+        -DLLVM_DEFAULT_TARGET_TRIPLE=${TARGET_TRIPLE}
+        -DLLVM_TARGETS_TO_BUILD=${LLVM_TARGETS_TO_BUILD}
+)
 
-set(LLVM_CFLAGS ${__CFLAGS} CACHE PATH "llvm c flags")
-set(LLVM_CXXFLAGS ${__CXXFLAGS} CACHE PATH "llvm cxx flags")
-set(LLVM_LDFLAGS ${__LDFLAGS} CACHE PATH "llvm linker flags")
-
-
-configure_file(${SRC}/cmake/app.clang.toolchain.cmake.in ${DST}/app.toolchain.cmake @ONLY)
+if(BUILD_BINUTILS)
+    ExternalProject_Add(binutils
+        URL http://ftp.gnu.org/gnu/binutils/binutils-2.31.tar.gz
+        URL_MD5 2a14187976aa0c39ad92363cfbc06505
+        SOURCE_DIR ${THIRD_PARTY_DIR}/binutils
+        BUILD_IN_SOURCE 0
+        UPDATE_COMMAND ""
+        CONFIGURE_COMMAND ${THIRD_PARTY_DIR}/binutils/configure
+            --prefix=${TOOLCHAIN_DIR}
+            --target=${TARGET_TRIPLE}
+            --enable-gold
+            --enable-ld
+            --enable-lto
+    )
+    add_dependencies(binutils llvm)
+endif()

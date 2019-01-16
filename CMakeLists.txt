@@ -24,6 +24,8 @@
 
 cmake_minimum_required(VERSION 3.11)
 
+CMAKE_POLICY(SET CMP0066 NEW)
+
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "MinSizeRel" CACHE STRING "Choose the type of build, options are: Debug, Release, or MinSizeRel." FORCE)
     message(STATUS "CMAKE_BUILD_TYPE not set, defaulting to MinSizeRel.")
@@ -45,7 +47,10 @@ message(STATUS "Build Type ............. ${CMAKE_BUILD_TYPE}")
 option(BUILD_RPI_FLUTTER "Build Flutter for Raspberry Pi" ON)
 option(BUILD_WAYLAND_FLUTTER "Build Flutter for Wayland" OFF)
 
-include(build_dependencies)
+set(THIRD_PARTY_DIR ${CMAKE_SOURCE_DIR}/third_party)
+
+include(toolchain)
+include(engine)
 
 if(ANDROID)
     set(FLUTTER_TARGET_NAME "Android")
